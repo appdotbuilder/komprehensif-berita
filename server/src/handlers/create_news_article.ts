@@ -1,20 +1,31 @@
+import { db } from '../db';
+import { newsArticlesTable } from '../db/schema';
 import { type CreateNewsArticleInput, type NewsArticle } from '../schema';
 
 export const createNewsArticle = async (input: CreateNewsArticleInput): Promise<NewsArticle> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is creating a new news article and persisting it in the database.
-    // It should insert the article with all provided fields and return the created article with generated ID and timestamps.
-    return Promise.resolve({
-        id: 0, // Placeholder ID - real implementation should use database auto-increment
+  try {
+    // Insert news article record
+    const result = await db.insert(newsArticlesTable)
+      .values({
         title: input.title,
         content: input.content,
         excerpt: input.excerpt,
         category: input.category,
         image_url: input.image_url,
         author: input.author,
-        is_featured: input.is_featured,
-        view_count: 0, // New articles start with 0 views
-        created_at: new Date(), // Placeholder date - real implementation should use database timestamp
-        updated_at: new Date() // Placeholder date - real implementation should use database timestamp
-    } as NewsArticle);
+        is_featured: input.is_featured || false // Apply default if not provided
+      })
+      .returning()
+      .execute();
+
+    // Return the created article
+    const article = result[0];
+    return {
+      ...article,
+      view_count: article.view_count || 0 // Ensure view_count is never null
+    };
+  } catch (error) {
+    console.error('News article creation failed:', error);
+    throw error;
+  }
 };

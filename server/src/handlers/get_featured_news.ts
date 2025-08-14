@@ -1,12 +1,34 @@
+import { db } from '../db';
+import { newsArticlesTable } from '../db/schema';
 import { type NewsArticle } from '../schema';
+import { eq, desc, count } from 'drizzle-orm';
 
 export const getFeaturedNews = async (limit: number = 5): Promise<{ articles: NewsArticle[], total: number }> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is fetching featured news articles (is_featured = true).
-    // It should return articles marked as featured for special display on homepage.
-    // The limit parameter controls how many featured articles to return.
-    return Promise.resolve({
-        articles: [], // Placeholder - real implementation should return featured articles from database
-        total: 0 // Placeholder - real implementation should return total count of featured articles
-    });
+  try {
+    // Query for featured articles
+    const articlesQuery = db.select()
+      .from(newsArticlesTable)
+      .where(eq(newsArticlesTable.is_featured, true))
+      .orderBy(desc(newsArticlesTable.created_at))
+      .limit(limit);
+
+    // Query for total count of featured articles
+    const countQuery = db.select({ count: count() })
+      .from(newsArticlesTable)
+      .where(eq(newsArticlesTable.is_featured, true));
+
+    // Execute both queries concurrently
+    const [articles, totalResult] = await Promise.all([
+      articlesQuery.execute(),
+      countQuery.execute()
+    ]);
+
+    return {
+      articles,
+      total: totalResult[0]?.count || 0
+    };
+  } catch (error) {
+    console.error('Failed to fetch featured news:', error);
+    throw error;
+  }
 };

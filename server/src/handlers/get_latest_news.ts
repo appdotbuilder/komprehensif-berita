@@ -1,12 +1,30 @@
+import { db } from '../db';
+import { newsArticlesTable } from '../db/schema';
 import { type NewsArticle } from '../schema';
+import { desc, count } from 'drizzle-orm';
 
 export const getLatestNews = async (limit: number = 10): Promise<{ articles: NewsArticle[], total: number }> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is fetching the latest news articles ordered by created_at desc.
-    // It should return the most recent articles for the homepage.
-    // The limit parameter controls how many articles to return.
-    return Promise.resolve({
-        articles: [], // Placeholder - real implementation should return latest articles from database
-        total: 0 // Placeholder - real implementation should return total count of articles
-    });
+  try {
+    // Get the latest news articles ordered by created_at desc
+    const articles = await db.select()
+      .from(newsArticlesTable)
+      .orderBy(desc(newsArticlesTable.created_at))
+      .limit(limit)
+      .execute();
+
+    // Get total count of all articles
+    const totalResult = await db.select({ count: count() })
+      .from(newsArticlesTable)
+      .execute();
+
+    const total = totalResult[0]?.count || 0;
+
+    return {
+      articles,
+      total: Number(total) // Ensure total is a number
+    };
+  } catch (error) {
+    console.error('Get latest news failed:', error);
+    throw error;
+  }
 };
